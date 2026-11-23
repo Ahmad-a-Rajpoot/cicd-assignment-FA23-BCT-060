@@ -1,0 +1,60 @@
+import os
+import pytest
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8090")
+
+
+@pytest.fixture
+def driver():
+    options = Options()
+    options.binary_location = "/usr/bin/chromium"
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1280,800")
+    options.add_argument("--user-data-dir=/tmp/chrome-profile")
+    drv = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=options)
+    yield drv
+    drv.quit()
+
+
+def test_page_title(driver):
+    driver.get(BASE_URL)
+    assert driver.title == "CI/CD Assignment FA23-BCT-060"
+
+
+def test_heading(driver):
+    driver.get(BASE_URL)
+    assert driver.find_element(By.ID, "main-heading").text == "CI/CD Pipeline Assignment"
+
+
+def test_name_and_roll_number(driver):
+    driver.get(BASE_URL)
+    assert "Ahmad Ali Rajpoot" in driver.find_element(By.ID, "student-name").text
+    assert "FA23-BCT-060" in driver.find_element(By.ID, "roll-number").text
+
+
+def test_button_click_shows_message(driver):
+    driver.get(BASE_URL)
+    driver.find_element(By.ID, "greet-btn").click()
+    WebDriverWait(driver, 5).until(
+        EC.text_to_be_present_in_element((By.ID, "greet-msg"), "Hello")
+    )
+    assert driver.find_element(By.ID, "greet-msg").text == "Hello from the CI/CD pipeline!"
+
+
+def test_text_input_submit(driver):
+    driver.get(BASE_URL)
+    driver.find_element(By.ID, "text-input").send_keys("Selenium works")
+    driver.find_element(By.ID, "submit-btn").click()
+    WebDriverWait(driver, 5).until(
+        EC.text_to_be_present_in_element((By.ID, "output"), "Selenium works")
+    )
+    assert driver.find_element(By.ID, "output").text == "Selenium works"
+    driver.save_screenshot("screenshot.png")
